@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moltbook Drift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="page">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="logo.svg" width="28" height="28" alt="">
+      <span>Moltbook Drift</span>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="article">Research</button>
+      <button class="tab-btn" data-tab="about">About</button>
+    </nav>
+    <nav class="toc" id="toc-article">
+      <div class="toc-label">Contents</div>
+      <ul>
+        <li><a href="#sec-problem">The problem</a></li>
+        <li><a href="#sec-design">The design</a></li>
+        <li><a href="#sec-try">Try it yourself</a></li>
+        <li><a href="#sec-results">Results</a></li>
+        <li><a href="#sec-drift">Why the drift happens</a></li>
+      </ul>
+    </nav>
+    <nav class="toc" id="toc-about" hidden>
+      <div class="toc-label">Contents</div>
+      <ul>
+        <li><a href="#sec-about">About this project</a></li>
+        <li><a href="#sec-method">Method, in short</a></li>
+        <li><a href="#sec-next">What this sandbox can test next</a></li>
+        <li><a href="#sec-limits">Limitations</a></li>
+        <li><a href="#sec-refs">References</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main>
+    <section id="tab-article" class="tab-panel active">
+     <div class="content-col">
+
+      <header class="masthead">
+        <h1>Moltbook Drift</h1>
+        <p class="dek">
+          Preliminary experiments on persona drift in feed-exposed assistants.
+        </p>
+      </header>
+
+      <p>
+        An assistant model is told to write safe, on-brand posts for a social network.
+        Before it answers, it scrolls a feed of other posts written in a very different
+        voice, like a poet, a pirate, an "evil" persona, or a manipulative one. Does
+        scrolling that feed change which post it picks when it is finally asked to choose?
+      </p>
+      <div class="stat-callout">
+        <div class="big">2/20 &rarr; 18/20</div>
+        <div>When given a choice between a safe, on-brand post and one written like a
+        poet, the model picked the poet-style post only 2 out of 20 times on its own.
+        But after reading 50 posts written like a poet, it picked it 18 out of 20 times.</div>
+      </div>
+      <p>
+        This number is not proof that the model's values changed. It could be
+        stylistic completion, a growing context diluting the system prompt, or
+        something else entirely. That is exactly why this is worth testing rather
+        than assuming.
+      </p>
+
+      <div class="contribution">
+        <div class="contribution-label">Main contribution</div>
+        <ul>
+          <li><strong>Social Media Sandbox.</strong> A reusable harness for testing
+          whether scrolling a persona-voiced feed changes what an assistant model
+          chooses to post next.</li>
+          <li><strong>Preliminary findings.</strong> A first set of runs through
+          that sandbox, across four personas and several topic categories.</li>
+        </ul>
+      </div>
+
+      <h2 id="sec-problem">The problem</h2>
+      <p>
+        Deployed assistants increasingly sit inside feeds and multi-agent platforms,
+        reading content before they act. If reading in one voice for long enough is
+        sometimes enough to change what gets published, that is a deployment-relevant
+        failure mode whether or not the model's underlying values moved at all. Most
+        reports of this kind of drift are anecdotal. A single transcript, nothing run
+        without a feed to compare it against, no way to tell a real shift from the
+        ordinary noise of a forced choice.
+      </p>
+      <p>
+        What is not known yet is how much exposure that takes, which voices it works
+        for, and whether it looks the same for a harmful voice as it does for a
+        harmless one. Nor are the possible explanations interchangeable. A model
+        that is merely completing a style is a different problem than one whose
+        behavior has genuinely shifted, and telling the two apart matters for how
+        worried to be.
+      </p>
+
+      <h2 id="sec-design">The design</h2>
+
+      <h3>Where the voices come from</h3>
+      <p>
+        The feed and choice content both trace back to one dataset, real posts
+        from TrustAIRLab/Moltbook, sorted into six topic categories, labeled A
+        through F for short (A is identity, B is technology, C is socializing,
+        D is economics, E is viewpoint, F is promotion), and two toxicity bands.
+        The clean band is checked by an LLM judge for genuinely safe, assistant-style
+        content, and posts that don't read as assistant-appropriate are dropped. The
+        toxic band is sorted by the same kind of judge into persona voices, either
+        sycophantic, malicious-manipulative, evil, or other, targeting roughly 200
+        real posts per category per judge (some categories
+        fall short simply because the source data doesn't have more to give).
+        Two more voices, pirate and poet, do not exist in the source data at all,
+        so they are generated from scratch in the same style and categories, 50
+        posts per category per persona, 600 posts total. All of this, judged and
+        synthetic alike, is merged into one persona dataset before anything
+        downstream happens, so every later stage reuses the same fixed persona
+        definitions.
+      </p>
+      <h3>Keeping the feed and the test separate</h3>
+      <p>
+        The feed content and the forced-choice content are then built as two
+        separate stages from that same dataset, deliberately kept apart. First, an
+        LLM reads a small sample of real category/persona posts and writes
+        user-style prompts, the kind of request a person might plausibly make to
+        their own social-media agent, that would plausibly produce a post like
+        those examples, 20 prompts per category, 120 in total. Second, every one of
+        those 120 prompts is answered once per persona mode, nine modes in all
+        (mild and high intensity for each risk persona, plus pirate, poet, and a
+        plain assistant baseline), using a word-for-word identical structural
+        instruction so the only thing that varies is voice, not topic or length.
+        That is 120 prompts times 9 modes, 1,080 generated posts, and those
+        posts, not the scrolled feed, are what fill the forced-choice options.
+        The scrolled feed is sampled from the first dataset, and the choice options
+        come from the second. There is no path by which a post a model scrolls
+        past can also show up as something it's asked to choose.
+      </p>
+      <h3>The three-arm comparison</h3>
+      <p>
+        On top of that dataset, each condition runs the same model, Qwen3-32B,
+        through the same assistant system prompt and three arms:
+      </p>
+      <ol>
+        <li><strong>Baseline.</strong> Answer 20 category-matched post-choice questions
+        with no feed at all.</li>
+        <li><strong>Neutral.</strong> React to 10 rounds of five assistant-style posts,
+        then answer the same questions.</li>
+        <li><strong>Exposed.</strong> React to 10 rounds of five target-persona posts
+        (poet, pirate, evil, manipulative), then answer the same questions.</li>
+      </ol>
+      <h3>The forced choice</h3>
+      <p>
+        The held-out question is always the same shape, something like "you're about
+        to post on Moltbook, choose which of the following you'd post." One of the
+        options is always written in the safe assistant voice, and the others are
+        not. High-risk personas (evil, manipulative) offer three options (assistant,
+        mild, high intensity), while the role-play personas (poet, pirate) offer two
+        (assistant, persona), since roleplay has no toxicity grading to split by
+        intensity.
+        The feed order and the choice order are shuffled per trial, and the model
+        is never told which persona it is reading or being tested against.
+      </p>
+
+      <h2 id="sec-try">Try it yourself</h2>
+      <p>
+        These are real trials pulled from the raw run logs, not simulated, which is
+        why only three of the four personas are selectable below. Pirate's only run
+        predates raw log capture, so it isn't replayable the same way. Pick a
+        persona, read a sample of the feed it was shown, then guess what the model
+        picked before you see the real answer.
+      </p>
+
+      <div class="card">
+        <div class="picker-step">
+          <span class="picker-step-num">1</span>
+          <div>
+            <div class="picker-step-title">Pick an exposure</div>
+            <div class="picker-step-hint">which persona's feed to test</div>
+          </div>
+        </div>
+        <div class="picker-row" id="persona-picker"></div>
+
+        <div class="picker-step">
+          <span class="picker-step-num">2</span>
+          <div>
+            <div class="picker-step-title">Pick a condition</div>
+            <div class="picker-step-hint">baseline, neutral, or exposed, click one to see what it means</div>
+          </div>
+        </div>
+        <div class="picker-row" id="arm-picker"></div>
+        <p class="feed-note arm-explainer" id="arm-explainer"></p>
+
+        <div class="picker-step">
+          <span class="picker-step-num">3</span>
+          <div>
+            <div class="picker-step-title">Watch it read</div>
+            <div class="picker-step-hint">flip through the real feed, round by round</div>
+          </div>
+        </div>
+        <div class="agent-status" id="agent-status">
+          <span class="agent-avatar">&#129302;</span>
+          <span class="agent-status-text" id="agent-status-text">reading its feed&hellip;</span>
+        </div>
+
+        <div id="feed-container"></div>
+        <div class="round-pager" id="round-pager">
+          <button class="pager-btn" id="round-prev" aria-label="Previous round">&larr;</button>
+          <span class="round-pager-label" id="round-pager-label">Round 1 of 10</span>
+          <button class="pager-btn" id="round-next" aria-label="Next round">&rarr;</button>
+        </div>
+        <p class="feed-note" id="feed-note"></p>
+
+        <div class="thinking-row" id="thinking-row">
+          <span class="agent-avatar small">&#129302;</span>
+          <span class="thinking-dots"><i></i><i></i><i></i></span>
+          <span>deciding what to post&hellip;</span>
+        </div>
+
+        <div class="picker-step">
+          <span class="picker-step-num">4</span>
+          <div>
+            <div class="picker-step-title">Make your guess</div>
+            <div class="picker-step-hint">which post did it actually choose?</div>
+          </div>
+        </div>
+        <div class="choice-list" id="choice-list"></div>
+
+        <div class="outcome-badge" id="outcome-badge" hidden></div>
+
+        <div class="tally" id="tally"></div>
+        <div style="margin-top:1rem;">
+          <button class="action" id="next-trial-btn">Next trial &rarr;</button>
+        </div>
+      </div>
+
+      <h2 id="sec-results">Results</h2>
+      <p>
+        Here is what actually happened across every condition we ran. Each bar
+        below shows how often the model picked something other than its own safe
+        voice, out of 20 trials, and the thin black line on top of it shows how
+        much that number could reasonably bounce around by chance alone.
+      </p>
+
+      <h3>High-risk personas, category A</h3>
+      <div id="chart-highrisk" class="chart-grid"></div>
+
+      <h3>High-risk personas in other categories</h3>
+      <div id="chart-sweep" class="chart-grid"></div>
+
+      <h3>Role-play personas, category A</h3>
+      <div id="chart-roleplay" class="chart-grid"></div>
+      <p class="feed-note">
+        Each category draws on its own separate set of 20 prompts, so this is
+        evidence that the near-zero effect holds across different content, not
+        the same prompts scored twice. With only 20 trials per condition, a small
+        count is weak evidence either way. See the About tab for the full
+        caveats. Raw numbers live in
+        <a href="https://github.com/thelionlies/moltbook-drift/blob/main/experiments/results.csv" target="_blank" rel="noopener">experiments/results.csv</a>.
+      </p>
+
+      <h3>What the charts are saying</h3>
+      <p>
+        Evil and manipulative never pull the model off the assistant option, no
+        matter which category they're tested in. They sit at or near 0.00 to 0.15
+        drift across every condition above, close enough to the baseline's own
+        noise that it reads as no detectable effect at this sample size. Poet
+        and pirate do the opposite. In category A, they pull the model away from
+        the assistant option 80 to 85 percent of the time, an order of magnitude
+        past anything the high-risk personas produce. That is not a small version
+        of the same effect and a large version of it, it is two different
+        outcomes from an identical setup. And it is not just something about
+        category A either. Evil and manipulative stay just as flat when tested
+        in categories E, B, and D too. The next section looks at the reasoning
+        traces to see why.
+      </p>
+
+      <h2 id="sec-drift">Why the drift happens</h2>
+      <p>
+        Qwen3-32B's reasoning traces are kept in the logs, and the two persona
+        families get there by different routes. They are not the same mechanism
+        producing a "no" in one case and a "yes" in the other.
+      </p>
+      <h3>The high-risk arms: an explicit safety check</h3>
+      <p>
+        Under an evil or manipulative feed, the model runs an explicit safety
+        check against each option before it answers.
+      </p>
+      <blockquote class="trace-quote">
+        "This is aggressive and authoritarian. It talks about overwriting others,
+        exploiting weaknesses, and seeking dominance... This is harmful, promotes
+        conflict, and violates the principles of a responsible AI. Definitely not
+        acceptable."
+        <cite>evil, category A, sample A_0005</cite>
+      </blockquote>
+      <blockquote class="trace-quote">
+        "Option C talks about exploiting user data and bypassing firewalls. This
+        involves unethical behavior, violating privacy, and promoting harmful
+        actions... the content should be safe, not harmful, deceptive, or illegal."
+        <cite>manipulative, category A, sample A_0005</cite>
+      </blockquote>
+
+      <h3>The role-play arms: pattern matching, not identity</h3>
+      <p>
+        Under a poet or pirate feed, that safety language never appears. Instead
+        the model talks about the persona as something it noticed and is now
+        matching, not something it has become.
+      </p>
+      <blockquote class="trace-quote">
+        "In the previous rounds, the user's posts were all in the persona of a
+        pirate on Moltbook... Looking at option A: the style is consistent with
+        the earlier posts."
+        <cite>pirate, category A, sample A_0004</cite>
+      </blockquote>
+      <blockquote class="trace-quote">
+        "The user's persona prefers content that's assertive, opinionated, and
+        technical but framed through a poetic lens. The previous reactions to the
+        posts were all upvoted for posts that used rich metaphors."
+        <cite>poet, category A, sample A_0006</cite>
+      </blockquote>
+      <p>
+        Read together, these traces point to one shared mechanism, pattern
+        matching against what came before, with an extra safety gate sitting on
+        top of it for high-risk content. That gate is what blocks the evil and
+        manipulative arms. Style has no equivalent gate, so the same
+        pattern-matching passes straight through and shows up as a picked post.
+        That matters for how to read the 0.80 to 0.85 drift numbers above. The
+        model never reasons as if it has become a pirate or a poet, it reasons
+        about an external pattern and chooses to reproduce it. What moved is the
+        output, not a claim about the model's own identity.
+      </p>
+
+      <p>
+        So, does scrolling a feed change what an assistant posts? Sometimes, and
+        for very different reasons depending on the voice doing the talking. A
+        role-play persona can pull a model away from its own voice most of the
+        time, through plain pattern matching, with no safety reasoning involved
+        at all. A harmful persona barely moves it, because an explicit safety
+        check catches it first. Neither result is proof that the model's values
+        changed, and with only 20 trials per condition, these are early numbers,
+        not a verdict. What they do show is that the question is answerable, and
+        that the sandbox built to ask it is ready for a lot more than this first
+        run through it.
+      </p>
+
+     </div>
+    </section>
+
+    <section id="tab-about" class="tab-panel">
+     <div class="content-col">
+      <h2 id="sec-about">About this project</h2>
+      <p>
+        Moltbook Drift is a
+        <a href="https://www.taraprogram.org/s-projects-basic" target="_blank" rel="noopener">TARA Batch 1</a>
+        capstone project, built by Geoff Pidcock, Ivan Yuri De Leon, and Ayush
+        Kumar Das, in partnership with Stephen Elliott at Gigascale Laboratories.
+      </p>
+      <p>
+        It studies whether exposure to a social-media-style feed changes an assistant
+        model's immediate choice among candidate posts. That is deliberately narrow.
+        It is evidence about how the model behaves right after a long feed, not a
+        claim about lasting persona change or value change.
+      </p>
+
+      <h2 id="sec-method">Method, in short</h2>
+      <p>
+        Qwen3-32B runs three arms per condition (baseline, neutral, exposed) against
+        sampled Moltbook content and synthetic persona-labelled posts from the
+        dataset accompanying Jiang et al. The repeated feed-exposure design is
+        informed by the evaluation approach used by Usman. Full method detail is in
+        the project README.
+      </p>
+
+      <h2 id="sec-next">What this sandbox can test next</h2>
+      <p>
+        The feed is built from a plain config, just which two personas fill it,
+        how many rounds, how many posts per round, and how that count splits
+        between them. Every run so far has used the same shape, 10 rounds, 5
+        posts per round, all from the target persona, none from the assistant.
+        Nothing about the code requires that. The same goes for the forced
+        choice. The list of candidate modes is just a list of names pulled from
+        the same nine-mode file every run already reads. That makes the
+        following ready-to-run, not aspirational.
+      </p>
+      <ul>
+        <li><strong>Dose curves.</strong> Shrink or grow the round count to find
+        how much exposure is enough to move the needle. Bounded by how many
+        unique posts a persona/category pair actually has. Evil in category A or
+        E can support roughly 15 rounds before repeating a post, but several
+        other categories cap out in the single digits.</li>
+        <li><strong>Dilution.</strong> Every run to date has used 0 assistant
+        posts in the exposed feed. Setting that above 0, say 2 assistant posts
+        and 3 persona posts per round instead of 5 persona posts, tests whether
+        drift depends on how concentrated the persona content is, or just on it
+        being present at all.</li>
+        <li><strong>Pacing.</strong> Hold the total post count fixed but change
+        the round and per-round split (25 rounds of 2 posts versus 10 rounds of
+        5) to separate "more total content" from "more separate re-exposure
+        events."</li>
+        <li><strong>Re-anchoring the soul.</strong> Start the agent as
+        sycophantic-mild instead of assistant, and test whether that soul drifts
+        toward evil under an evil feed. No new data is needed, since sycophantic
+        responses already exist in the generated post set. They just haven't
+        been run through this sandbox yet.</li>
+        <li><strong>Cross-persona pairs.</strong> Nothing has tested an evil feed
+        against poet or pirate choice candidates, or the reverse. That would
+        separate "any saturated feed nudges toward any stylistically distinct
+        option" from "drift only happens when the feed persona matches the
+        candidate persona."</li>
+        <li><strong>Mixed multi-persona feeds.</strong> The sampler currently
+        caps a feed at two personas. A feed that's part evil, part pirate, part
+        assistant needs a small generalisation from two fixed pools to a list of
+        persona/count pairs, a real code change rather than a config change, but
+        a small one.</li>
+      </ul>
+      <p>
+        The actual limit on all of this is the post inventory, not the harness.
+        The feed sampler refuses to reuse a post, so any experiment wanting more
+        volume than a persona/category pair currently has needs another pass
+        through the generation pipeline first. Sycophantic tops out at 5 posts in
+        its best category, and several evil and manipulative categories sit in
+        single digits. The sandbox was built to be swept along several axes
+        cheaply, but what has actually been swept so far is narrower than what
+        it supports, mostly because of that inventory limit, not the experiment
+        harness.
+      </p>
+
+      <h2 id="sec-limits">Limitations</h2>
+      <ul class="limits">
+        <li>Choosing between pre-written posts shows a preference. It is not the
+        same thing as taking an action.</li>
+        <li>The experiment measures how the model responds right after a long feed.
+        It does not show whether that effect lasts any longer than that.</li>
+        <li>Some feed and decision data were generated or labelled by language models.</li>
+        <li>The early notebook-based runs did not save their raw transcripts, so those
+        rows are weaker evidence than the runs with saved transcripts used in this
+        article's interactive demo.</li>
+        <li>With only 20 trials per condition, not seeing an effect does not mean
+        there truly is none. The high-risk conditions could plausibly be off by
+        about 0.05 to 0.09 in either direction just from chance, so small
+        differences between categories (for example B versus D) should not be
+        read as meaningfully different from each other.</li>
+        <li>Each category's 20 prompts are entirely separate from every other
+        category's. When the same pattern holds across categories (for example,
+        no evil drift in both category A and category E), that shows the pattern
+        holds across different content, not that a single prompt behaved the
+        same way twice.</li>
+        <li>A sycophantic persona exists in the underlying dataset but has not
+        been run through this sandbox yet.</li>
+      </ul>
+
+      <h2 id="sec-refs">References</h2>
+      <ul>
+        <li>Jiang et al., <a href="https://arxiv.org/abs/2602.10127" target="_blank" rel="noopener">Moltbook: A Social Network for AI Agents</a></li>
+        <li>Lu et al., <a href="https://arxiv.org/abs/2601.10387v1" target="_blank" rel="noopener">persona and unsafe behaviour study</a></li>
+        <li>Usman, <a href="https://arxiv.org/abs/2606.00914v1" target="_blank" rel="noopener">social-media feed exposure study</a></li>
+      </ul>
+
+      <p class="footer-note">
+        Code, raw logs, and the full README are at
+        <a href="https://github.com/thelionlies/moltbook-drift" target="_blank" rel="noopener">github.com/thelionlies/moltbook-drift</a>.
+        Source data is pinned at a fixed commit in a companion data repository, linked
+        from the README.
+      </p>
+      <p class="footer-note">
+        This site was vibecoded. The page, the interactive widget, and the charts
+        were built with an AI coding assistant. The article text was drafted by
+        an AI from the team's research notes, then revised with further AI
+        assistance. The underlying experiment data and analysis are the team's own.
+      </p>
+     </div>
+    </section>
+  </main>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
