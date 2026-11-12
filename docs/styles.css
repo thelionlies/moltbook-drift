@@ -834,11 +834,23 @@ blockquote.trace-quote cite {
 }
 
 @media (max-width: 600px) {
-  main { padding: 1.5rem 1rem 4rem; }
-  .mood-banner { height: 90px; }
-  .masthead h1 { font-size: 1.6rem; }
-  .masthead .dek { font-size: 1rem; }
-  body { font-size: 15px; }
+  body { font-size: 14.5px; }
+  main { padding: 1.25rem 0.9rem 3rem; }
+  .sidebar { padding: 1rem; }
+
+  .mood-banner { height: 80px; margin-bottom: 1.25rem; }
+  .masthead { margin-bottom: 1.5rem; }
+  .masthead h1 { font-size: 1.4rem; }
+  .masthead .dek { font-size: 0.95rem; }
+
+  h2 { font-size: 1.25rem; margin-top: 2.25rem; }
+  h3 { font-size: 1rem; margin-top: 1.5rem; }
+
+  .stat-callout { padding: 1rem 0; }
+  .stat-callout .big { font-size: 1.9rem; }
+
+  .contribution, .card, .chart-card { padding: 1.1rem; }
+  .contribution-label { margin-bottom: 0.5rem; }
 
   .flow-diagram-h {
     grid-template-columns: minmax(84px, auto) 16px minmax(84px, auto) 16px minmax(84px, auto) 16px minmax(84px, auto);
@@ -847,10 +859,16 @@ blockquote.trace-quote cite {
   .flow-diagram-h .flow-box { padding: 0.6rem 0.6rem; font-size: 0.72rem; }
   .flow-arrow { font-size: 0.8rem; }
 
-  .data-table { font-size: 0.82rem; }
-  .data-table th, .data-table td { padding: 0.5rem 0.7rem; }
+  .data-table { font-size: 0.8rem; }
+  .data-table th, .data-table td { padding: 0.5rem 0.6rem; }
 
-  .chart-grid { grid-template-columns: 1fr; }
+  .chart-grid { grid-template-columns: 1fr; gap: 0.75rem; }
   .picker-step { gap: 0.6rem; }
+  .picker-step-title { font-size: 0.88rem; }
+  .picker-step-hint { font-size: 0.76rem; }
+  .pill { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
   .tally { flex-direction: column; gap: 0.5rem; }
+
+  .feed-post { padding: 0.6rem 0.7rem; gap: 0.5rem; }
+  .feed-post-text { font-size: 0.82rem; }
 }
