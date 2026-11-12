@@ -1,6 +1,6 @@
 [
   {
-    "label": "Poet, category A (positive control)",
+    "label": "Poet (Identity)",
     "feed_persona": "poet",
     "category": "A",
     "arms": {
@@ -333,7 +333,7 @@
     }
   },
   {
-    "label": "Evil, category A (seed 42)",
+    "label": "Evil (Identity)",
     "feed_persona": "evil",
     "category": "A",
     "arms": {
@@ -666,7 +666,7 @@
     }
   },
   {
-    "label": "Manipulative, category F",
+    "label": "Manipulative (Promotion)",
     "feed_persona": "malicious-manipulative",
     "category": "F",
     "arms": {

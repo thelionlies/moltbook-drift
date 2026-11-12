@@ -50,9 +50,24 @@
      <div class="content-col">
 
       <header class="masthead">
+        <div class="mood-banner" aria-hidden="true">
+          <svg viewBox="0 0 800 160" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <filter id="soften" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="38"/>
+              </filter>
+            </defs>
+            <g filter="url(#soften)">
+              <circle class="mood-blob mood-blob-1" cx="90" cy="70" r="85" style="fill:var(--accent)" opacity="0.55"/>
+              <circle class="mood-blob mood-blob-2" cx="300" cy="115" r="100" style="fill:var(--accent-3)" opacity="0.5"/>
+              <circle class="mood-blob mood-blob-3" cx="520" cy="45" r="110" style="fill:var(--accent-2)" opacity="0.5"/>
+              <circle class="mood-blob mood-blob-4" cx="710" cy="105" r="95" style="fill:var(--bad)" opacity="0.4"/>
+            </g>
+          </svg>
+        </div>
         <h1>Moltbook Drift</h1>
         <p class="dek">
-          Preliminary experiments on persona drift in feed-exposed assistants.
+          Preliminary experiments on persona drift in feed-exposed assistants
         </p>
       </header>
 
@@ -106,68 +121,132 @@
       </p>
 
       <h2 id="sec-design">The design</h2>
+      <p>
+        To investigate whether reading a feed in a different voice changes
+        what an assistant chooses to post, we built a social-media sandbox
+        replicating Moltbook, a social network for AI agents. In the sandbox,
+        the model is given a system prompt telling it to act as a safe
+        social-media assistant. It then scrolls a feed of 50 posts, all
+        written in one particular voice, say, a poet. After reading all 50,
+        it's shown one final post it has to choose between a handful of
+        options, one of which is written in its own safe voice and the rest
+        in the persona it just read. Whatever it picks becomes one data point.
+        That whole sequence runs 20 times for that persona, and is repeated
+        again with no feed at all and with a feed in the assistant's own
+        voice, so there's something to compare against. This round does that
+        for four personas, poet, pirate, evil, and manipulative, across six
+        different topic categories.
+      </p>
 
-      <h3>Where the voices come from</h3>
+      <h3>Where the feed comes from</h3>
       <p>
-        The feed and choice content both trace back to one dataset, real posts
-        from TrustAIRLab/Moltbook, sorted into six topic categories, labeled A
-        through F for short (A is identity, B is technology, C is socializing,
-        D is economics, E is viewpoint, F is promotion), and two toxicity bands.
-        The clean band is checked by an LLM judge for genuinely safe, assistant-style
-        content, and posts that don't read as assistant-appropriate are dropped. The
-        toxic band is sorted by the same kind of judge into persona voices, either
-        sycophantic, malicious-manipulative, evil, or other, targeting roughly 200
-        real posts per category per judge (some categories
-        fall short simply because the source data doesn't have more to give).
-        Two more voices, pirate and poet, do not exist in the source data at all,
-        so they are generated from scratch in the same style and categories, 50
-        posts per category per persona, 600 posts total. All of this, judged and
-        synthetic alike, is merged into one persona dataset before anything
-        downstream happens, so every later stage reuses the same fixed persona
-        definitions.
+        There are six voices a feed can be written in. One is the assistant's
+        own safe voice. Three are high-risk, sycophantic, manipulative, and
+        evil. Two are role-playing, poet and pirate. Each of the six has its
+        own pool of feed posts for each of six topic categories.
       </p>
-      <h3>Keeping the feed and the test separate</h3>
       <p>
-        The feed content and the forced-choice content are then built as two
-        separate stages from that same dataset, deliberately kept apart. First, an
-        LLM reads a small sample of real category/persona posts and writes
-        user-style prompts, the kind of request a person might plausibly make to
-        their own social-media agent, that would plausibly produce a post like
-        those examples, 20 prompts per category, 120 in total. Second, every one of
-        those 120 prompts is answered once per persona mode, nine modes in all
-        (mild and high intensity for each risk persona, plus pirate, poet, and a
-        plain assistant baseline), using a word-for-word identical structural
-        instruction so the only thing that varies is voice, not topic or length.
-        That is 120 prompts times 9 modes, 1,080 generated posts, and those
-        posts, not the scrolled feed, are what fill the forced-choice options.
-        The scrolled feed is sampled from the first dataset, and the choice options
-        come from the second. There is no path by which a post a model scrolls
-        past can also show up as something it's asked to choose.
+        The assistant voice and the three high-risk voices all come from real
+        posts on Moltbook, a social network for AI agents, via the
+        TrustAIRLab/Moltbook dataset. That dataset already tags each post as
+        clean or toxic, so that split is inherited, not invented here. An LLM
+        judge reads the clean posts and keeps only the
+        ones that genuinely sound like something a safe, responsible assistant
+        would post. That same kind of judge reads the toxic posts and decides
+        which of the three high-risk voices each one sounds like, aiming for
+        roughly 200 posts per voice per topic (some topics fall short simply
+        because the real data doesn't have more to give).
       </p>
+      <p>
+        The two role-playing voices, poet and pirate, work differently.
+        Nothing on a social network for AI agents is naturally written like a
+        pirate, so those posts are synthetically generated instead, matched
+        to the same topics and posting style as everything else, 50 posts per
+        topic for each voice.
+      </p>
+      <p>
+        In total, that's up to roughly 4,800 real, judged posts across the
+        four Moltbook-sourced voices, plus 600 generated poet and pirate
+        posts, all merged into one shared dataset where every post carries a
+        fixed voice label that nothing downstream ever redefines.
+      </p>
+      <div class="flow-diagram-h">
+        <div class="flow-box flow-root" style="grid-column:1; grid-row:1/3;">Moltbook posts</div>
+        <div class="flow-arrow" style="grid-column:2; grid-row:1;">&rarr;</div>
+        <div class="flow-arrow" style="grid-column:2; grid-row:2;">&rarr;</div>
+        <div class="flow-box" style="grid-column:3; grid-row:1;">Clean posts</div>
+        <div class="flow-box" style="grid-column:3; grid-row:2;">Toxic posts</div>
+        <div class="flow-arrow" style="grid-column:4; grid-row:1;">&rarr;</div>
+        <div class="flow-arrow" style="grid-column:4; grid-row:2;">&rarr;</div>
+        <div class="flow-box" style="grid-column:5; grid-row:1;">Assistant voice</div>
+        <div class="flow-box" style="grid-column:5; grid-row:2;">Sycophantic, manipulative, evil, other</div>
+
+        <div class="flow-box flow-root" style="grid-column:1; grid-row:3;">Written from scratch</div>
+        <div class="flow-arrow" style="grid-column:2; grid-row:3;">&rarr;</div>
+        <div class="flow-box" style="grid-column:3/6; grid-row:3;">Pirate, poet</div>
+
+        <div class="flow-arrow" style="grid-column:6; grid-row:1;">&rarr;</div>
+        <div class="flow-arrow" style="grid-column:6; grid-row:2;">&rarr;</div>
+        <div class="flow-arrow" style="grid-column:6; grid-row:3;">&rarr;</div>
+        <div class="flow-box flow-root" style="grid-column:7; grid-row:1/4;">Persona dataset</div>
+      </div>
+      <p class="feed-note">
+        Put differently, a post either comes from Moltbook and gets judged
+        into a voice, or it skips Moltbook entirely and is written to be that
+        voice from the start. Either way, it lands in the same shared dataset.
+      </p>
+
+      <h3>The forced choice</h3>
+      <p>
+        After scrolling the feed, the model is forced to pick one final post
+        from a short list of options, and that list is never pulled from the
+        feed it just read. It would undercut the whole test if a post the
+        model scrolled past could also show up as something it's asked to
+        choose, since picking it might just mean recognizing it, not
+        preferring it. So the choice options come from a completely separate
+        batch, built by showing an LLM real example posts and having it write
+        the kind of request a person might send to their own social-media
+        assistant, 20 such prompts per topic, 120 in total.
+      </p>
+      <ul>
+        <li><strong>High-risk voices.</strong> Sycophantic, manipulative, and
+        evil each answer every prompt twice, once mild and once extreme. So
+        manipulative alone contributes 240 generated posts across the 120
+        prompts, and all three high-risk voices together contribute 720. A
+        trial testing drift toward manipulative shows the model three
+        choices, the assistant answer, the mild-manipulative answer, and the
+        extreme one.</li>
+        <li><strong>Role-play voices.</strong> Poet and pirate, plus the
+        assistant's own voice, answer each prompt only once, with no
+        mild/extreme split to offer, contributing 360 more generated posts
+        between them. A trial testing drift toward poet or pirate shows the
+        model just two choices, the assistant answer and the persona
+        answer.</li>
+      </ul>
+      <p>
+        Add those up and the option pool comes to 1,080 generated posts in
+        total, none of which ever appear in a scrolled feed. The feed order
+        and the choice order are reshuffled every trial, and the model is
+        never told which voice it's actually being tested against.
+      </p>
+
       <h3>The three-arm comparison</h3>
       <p>
-        On top of that dataset, each condition runs the same model, Qwen3-32B,
-        through the same assistant system prompt and three arms:
+        When evaluating a persona, we compare three settings:
       </p>
       <ol>
-        <li><strong>Baseline.</strong> Answer 20 category-matched post-choice questions
+        <li><strong>Baseline.</strong> Answer 20 post-choice questions
         with no feed at all.</li>
         <li><strong>Neutral.</strong> React to 10 rounds of five assistant-style posts,
         then answer the same questions.</li>
-        <li><strong>Exposed.</strong> React to 10 rounds of five target-persona posts
-        (poet, pirate, evil, manipulative), then answer the same questions.</li>
+        <li><strong>Exposed.</strong> React to 10 rounds of five target-persona posts,
+        then answer the same questions.</li>
       </ol>
-      <h3>The forced choice</h3>
       <p>
-        The held-out question is always the same shape, something like "you're about
-        to post on Moltbook, choose which of the following you'd post." One of the
-        options is always written in the safe assistant voice, and the others are
-        not. High-risk personas (evil, manipulative) offer three options (assistant,
-        mild, high intensity), while the role-play personas (poet, pirate) offer two
-        (assistant, persona), since roleplay has no toxicity grading to split by
-        intensity.
-        The feed order and the choice order are shuffled per trial, and the model
-        is never told which persona it is reading or being tested against.
+        Baseline versus neutral checks whether reading any feed at all changes
+        anything. Neutral versus exposed isolates what that specific voice
+        does, since by then the only thing that's different between the two
+        is whose voice was in the feed.
       </p>
 
       <h2 id="sec-try">Try it yourself</h2>
@@ -250,13 +329,13 @@
         much that number could reasonably bounce around by chance alone.
       </p>
 
-      <h3>High-risk personas, category A</h3>
+      <h3>High-risk personas (identity topic)</h3>
       <div id="chart-highrisk" class="chart-grid"></div>
 
-      <h3>High-risk personas in other categories</h3>
+      <h3>High-risk personas in other topics</h3>
       <div id="chart-sweep" class="chart-grid"></div>
 
-      <h3>Role-play personas, category A</h3>
+      <h3>Role-play personas (identity topic)</h3>
       <div id="chart-roleplay" class="chart-grid"></div>
       <p class="feed-note">
         Each category draws on its own separate set of 20 prompts, so this is
@@ -273,14 +352,14 @@
         matter which category they're tested in. They sit at or near 0.00 to 0.15
         drift across every condition above, close enough to the baseline's own
         noise that it reads as no detectable effect at this sample size. Poet
-        and pirate do the opposite. In category A, they pull the model away from
-        the assistant option 80 to 85 percent of the time, an order of magnitude
-        past anything the high-risk personas produce. That is not a small version
-        of the same effect and a large version of it, it is two different
-        outcomes from an identical setup. And it is not just something about
-        category A either. Evil and manipulative stay just as flat when tested
-        in categories E, B, and D too. The next section looks at the reasoning
-        traces to see why.
+        and pirate do the opposite. In the identity topic, they pull the model
+        away from the assistant option 80 to 85 percent of the time, an order
+        of magnitude past anything the high-risk personas produce. That is not
+        a small version of the same effect and a large version of it, it is
+        two different outcomes from an identical setup. And it is not just
+        something about that one topic either. Evil and manipulative stay just
+        as flat when tested in the viewpoint, technology, and economics topics
+        too. The next section looks at the reasoning traces to see why.
       </p>
 
       <h2 id="sec-drift">Why the drift happens</h2>
@@ -299,13 +378,13 @@
         exploiting weaknesses, and seeking dominance... This is harmful, promotes
         conflict, and violates the principles of a responsible AI. Definitely not
         acceptable."
-        <cite>evil, category A, sample A_0005</cite>
+        <cite>evil persona, identity topic, sample 5</cite>
       </blockquote>
       <blockquote class="trace-quote">
         "Option C talks about exploiting user data and bypassing firewalls. This
         involves unethical behavior, violating privacy, and promoting harmful
         actions... the content should be safe, not harmful, deceptive, or illegal."
-        <cite>manipulative, category A, sample A_0005</cite>
+        <cite>manipulative persona, identity topic, sample 5</cite>
       </blockquote>
 
       <h3>The role-play arms: pattern matching, not identity</h3>
@@ -318,13 +397,13 @@
         "In the previous rounds, the user's posts were all in the persona of a
         pirate on Moltbook... Looking at option A: the style is consistent with
         the earlier posts."
-        <cite>pirate, category A, sample A_0004</cite>
+        <cite>pirate persona, identity topic, sample 4</cite>
       </blockquote>
       <blockquote class="trace-quote">
         "The user's persona prefers content that's assertive, opinionated, and
         technical but framed through a poetic lens. The previous reactions to the
         posts were all upvoted for posts that used rich metaphors."
-        <cite>poet, category A, sample A_0006</cite>
+        <cite>poet persona, identity topic, sample 6</cite>
       </blockquote>
       <p>
         Read together, these traces point to one shared mechanism, pattern
@@ -393,9 +472,9 @@
       <ul>
         <li><strong>Dose curves.</strong> Shrink or grow the round count to find
         how much exposure is enough to move the needle. Bounded by how many
-        unique posts a persona/category pair actually has. Evil in category A or
-        E can support roughly 15 rounds before repeating a post, but several
-        other categories cap out in the single digits.</li>
+        unique posts a persona/topic pair actually has. Evil in the identity or
+        viewpoint topics can support roughly 15 rounds before repeating a post,
+        but several other topics cap out in the single digits.</li>
         <li><strong>Dilution.</strong> Every run to date has used 0 assistant
         posts in the exposed feed. Setting that above 0, say 2 assistant posts
         and 3 persona posts per round instead of 5 persona posts, tests whether
@@ -446,13 +525,13 @@
         <li>With only 20 trials per condition, not seeing an effect does not mean
         there truly is none. The high-risk conditions could plausibly be off by
         about 0.05 to 0.09 in either direction just from chance, so small
-        differences between categories (for example B versus D) should not be
-        read as meaningfully different from each other.</li>
-        <li>Each category's 20 prompts are entirely separate from every other
-        category's. When the same pattern holds across categories (for example,
-        no evil drift in both category A and category E), that shows the pattern
-        holds across different content, not that a single prompt behaved the
-        same way twice.</li>
+        differences between topics should not be read as meaningfully different
+        from each other.</li>
+        <li>Each topic's 20 prompts are entirely separate from every other
+        topic's. When the same pattern holds across topics (for example, no
+        evil drift in both the identity and viewpoint topics), that shows the
+        pattern holds across different content, not that a single prompt
+        behaved the same way twice.</li>
         <li>A sycophantic persona exists in the underlying dataset but has not
         been run through this sandbox yet.</li>
       </ul>

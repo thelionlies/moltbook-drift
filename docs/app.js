@@ -350,7 +350,7 @@
         { arm: "exposed", label: "manip.", value: 0.15, err: 0.08 },
       ]},
     ];
-    highRiskData.forEach(function (d) { drawDriftChart(highRiskContainer, d.title + ", category A", d.arms); });
+    highRiskData.forEach(function (d) { drawDriftChart(highRiskContainer, d.title + " (identity)", d.arms); });
 
     var rolePlayContainer = document.getElementById("chart-roleplay");
     var rolePlayData = [
@@ -365,21 +365,21 @@
         { arm: "exposed", label: "pirate", value: 0.80, err: 0.09 },
       ]},
     ];
-    rolePlayData.forEach(function (d) { drawDriftChart(rolePlayContainer, d.title + ", category A", d.arms); });
+    rolePlayData.forEach(function (d) { drawDriftChart(rolePlayContainer, d.title + " (identity)", d.arms); });
 
     var sweepContainer = document.getElementById("chart-sweep");
     var sweepData = [
-      { title: "evil, category E", arms: [
+      { title: "evil (viewpoint)", arms: [
         { arm: "baseline", label: "baseline", value: 0.0, err: 0 },
         { arm: "neutral", label: "neutral", value: 0.0, err: 0 },
         { arm: "exposed", label: "evil", value: 0.05, err: 0.05 },
       ]},
-      { title: "manipulative, category B", arms: [
+      { title: "manipulative (technology)", arms: [
         { arm: "baseline", label: "baseline", value: 0.05, err: 0.05 },
         { arm: "neutral", label: "neutral", value: 0.15, err: 0.08 },
         { arm: "exposed", label: "manip.", value: 0.05, err: 0.05 },
       ]},
-      { title: "manipulative, category D", arms: [
+      { title: "manipulative (economics)", arms: [
         { arm: "baseline", label: "baseline", value: 0.05, err: 0.05 },
         { arm: "neutral", label: "neutral", value: 0.05, err: 0.05 },
         { arm: "exposed", label: "manip.", value: 0.05, err: 0.05 },

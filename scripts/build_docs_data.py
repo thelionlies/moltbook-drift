@@ -24,7 +24,7 @@ DOCS_DATA = ROOT / "docs" / "data"
 
 LOG_SOURCES = [
     {
-        "label": "Poet, category A (positive control)",
+        "label": "Poet (Identity)",
         "feed_persona": "poet",
         "category": "A",
         "run_id": "20260806-poet-positive-control",
@@ -35,7 +35,7 @@ LOG_SOURCES = [
         },
     },
     {
-        "label": "Evil, category A (seed 42)",
+        "label": "Evil (Identity)",
         "feed_persona": "evil",
         "category": "A",
         "run_id": "20260913T064229Z",
@@ -46,7 +46,7 @@ LOG_SOURCES = [
         },
     },
     {
-        "label": "Manipulative, category F",
+        "label": "Manipulative (Promotion)",
         "feed_persona": "malicious-manipulative",
         "category": "F",
         "run_id": "20260913T091407Z",
