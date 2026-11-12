@@ -776,7 +776,7 @@ blockquote.trace-quote cite {
 
 @media (max-width: 900px) {
   html { font-size: 15px; }
-  .page { flex-direction: column; }
+  .page { flex-direction: column; align-items: stretch; }
   .sidebar {
     position: static;
     width: 100%;
