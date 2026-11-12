@@ -147,46 +147,6 @@ main {
 
 .masthead { margin-bottom: 2.5rem; }
 
-.mood-banner {
-  width: 100%;
-  height: 130px;
-  overflow: hidden;
-  border-radius: var(--radius);
-  background: var(--panel-2);
-  margin-bottom: 1.75rem;
-}
-
-.mood-banner svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.mood-blob {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: mood-drift 18s linear infinite;
-}
-
-.mood-blob-1 { animation-duration: 16s; }
-.mood-blob-2 { animation-duration: 22s; animation-direction: reverse; }
-.mood-blob-3 { animation-duration: 19s; animation-delay: -7s; }
-.mood-blob-4 { animation-duration: 25s; animation-direction: reverse; animation-delay: -3s; }
-
-@keyframes mood-drift {
-  0% { transform: translate(0, 0) scale(1); }
-  14% { transform: translate(26px, -20px) scale(1.1); }
-  28% { transform: translate(14px, -34px) scale(0.94); }
-  42% { transform: translate(-18px, -22px) scale(1.07); }
-  57% { transform: translate(-30px, 6px) scale(0.92); }
-  71% { transform: translate(-12px, 28px) scale(1.08); }
-  85% { transform: translate(20px, 18px) scale(0.95); }
-  100% { transform: translate(0, 0) scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mood-blob { animation: none; }
-}
 
 .eyebrow {
   font-weight: 700;
@@ -835,7 +795,6 @@ blockquote.trace-quote cite {
   main { padding: 1.25rem 0.9rem 3rem; }
   .sidebar { padding: 1rem; }
 
-  .mood-banner { height: 80px; margin-bottom: 1.25rem; }
   .masthead { margin-bottom: 1.5rem; }
   .masthead h1 { font-size: 1.4rem; }
   .masthead .dek { font-size: 0.95rem; }
