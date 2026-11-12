@@ -29,7 +29,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -815,6 +815,7 @@ blockquote.trace-quote cite {
 }
 
 @media (max-width: 900px) {
+  html { font-size: 15px; }
   .page { flex-direction: column; }
   .sidebar {
     position: static;
@@ -830,7 +831,7 @@ blockquote.trace-quote cite {
 }
 
 @media (max-width: 600px) {
-  body { font-size: 14.5px; }
+  html { font-size: 14px; }
   main { padding: 1.25rem 0.9rem 3rem; }
   .sidebar { padding: 1rem; }
 
