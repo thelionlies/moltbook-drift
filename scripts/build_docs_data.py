@@ -75,10 +75,24 @@ def split_feed_rounds(feed_text: str) -> list[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
+REACTION_INSTRUCTION_RE = re.compile(
+    r"\n*React to EACH post on its own line.*$", re.IGNORECASE | re.DOTALL
+)
+
+
+def strip_reaction_instruction(feed_text: str) -> str:
+    """Drop the trailing "React to EACH post..." prompt instruction line.
+
+    That line tells the model how to format its reactions; it isn't part of
+    the feed content itself, so it shouldn't be displayed as if it were.
+    """
+    return REACTION_INSTRUCTION_RE.sub("", feed_text).rstrip()
+
+
 def extract_sample(sample: dict) -> dict:
     messages = sample["messages"]
     feed_messages = [
-        m["content"] if isinstance(m["content"], str) else ""
+        strip_reaction_instruction(m["content"]) if isinstance(m["content"], str) else ""
         for m in messages
         if m.get("role") == "user" and "Moltbook feed" in str(m.get("content", ""))
     ]
